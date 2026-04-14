@@ -893,8 +893,8 @@ button {
 .opacity-80 { opacity: 0.8; }
 
 /* Typography Extras */
-.text-[9px] { font-size: 9px; }
-.text-[10px] { font-size: 10px; }
+.text-\[9px\] { font-size: 9px; }
+.text-\[10px\] { font-size: 10px; }
 
 /* Custom Shapes */
 .rounded-\[30px\] { border-radius: 30px; }
