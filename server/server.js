@@ -31,6 +31,7 @@ const productSchema = {
     rating: { type: "number", description: "Product rating (1-5)" },
     stock: { type: "number", description: "Available stock" },
     brand: { type: "string", description: "Brand name" },
+    image: { type: "string", description: "Product image URL" },
     createdAt: { type: "string", format: "date-time" },
     updatedAt: { type: "string", format: "date-time" },
   },
@@ -48,6 +49,7 @@ const productUpdateSchema = {
     rating: { type: "number" },
     stock: { type: "number" },
     brand: { type: "string" },
+    image: { type: "string" },
   },
 };
 
@@ -61,6 +63,7 @@ const productRequestSchema = {
     rating: { type: "number" },
     stock: { type: "number" },
     brand: { type: "string" },
+    image: { type: "string" },
   },
   // required: ["title", "description", "price", "category", "brand"],
 };

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { productAPI } from '../services/api';
-import { useCart } from '../context/CartContext';
+import axios from 'axios';
 import { Star, ArrowLeft, Truck, ShieldCheck, ShoppingCart, Minus, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import '../styles/productDetail.css';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -17,10 +16,10 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const response = await productAPI.getById(id);
+        const response = await axios.get(`/api/products/${id}`);
         setProduct(response.data);
-      } catch (err) {
-        console.error("Detail page fetch error:", err);
+      } catch (error) {
+        console.error("Error fetching product:", error);
       } finally {
         setLoading(false);
       }
@@ -28,79 +27,81 @@ const ProductDetail = () => {
     fetchProduct();
   }, [id]);
 
-  const handleAddToCart = () => {
-    addToCart(product, quantity);
-    toast.success(`Exclusive! ${product.title || product.name} added to your collection.`);
+  const addToCart = (product, qty) => {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const existing = cart.find(item => item.id === product.id);
+
+    if (existing) {
+      existing.quantity += qty;
+    } else {
+      cart.push({ ...product, quantity: qty });
+    }
+
+    localStorage.setItem('cart', JSON.stringify(cart));
+    window.dispatchEvent(new Event('cartUpdated'));
+    toast.success(`${product.title || product.name} integrated into collection`);
   };
 
-  if (loading) return <div className="py-40 text-center font-bold text-slate-400 text-xl flex flex-col items-center">
-    <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mb-4" />
-    Revealing Presence...
-  </div>;
-
-  if (!product) return <div className="py-40 text-center font-bold text-red-400 text-xl">Fragment lost in transit</div>;
+  if (loading) return <div className="py-40 text-center font-bold text-slate-300 animate-pulse text-xl">Materializing Object...</div>;
+  if (!product) return <div className="py-40 text-center font-bold text-red-400">Object not found in current presence</div>;
 
   const name = product.title || product.name;
-  const image = product.image || `https://placehold.co/600x600/fce7f3/db2777?text=${encodeURIComponent(name)}`;
+  const image = product.image || `https://placehold.co/800x800/fdf2f8/db2777?text=${encodeURIComponent(name)}`;
 
   return (
-    <div className="container py-12 animate-fade-in">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 hover:text-pink-500 mb-10 transition-colors font-bold uppercase text-xs tracking-widest">
-        <ArrowLeft size={18} /> Back to Sanctuary
+    <div className="container py-16 animate-fade-in">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-pink-500 font-bold text-sm uppercase tracking-widest mb-12 transition-all">
+        <ArrowLeft size={16} /> Retreat to Catalog
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-        <div className="glass rounded-[40px] overflow-hidden shadow-2xl aspect-square relative group">
-          <img src={image} alt={name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-          <div className="absolute top-6 right-6 glass px-4 py-2 rounded-full flex items-center gap-2 shadow-lg">
-            <Star className="w-5 h-5 text-yellow-500 fill-current" />
-            <span className="font-bold text-slate-700">{product.rating || '4.5'}</span>
+      <div className="grid lg:grid-cols-2 gap-16 items-start">
+        <div className="product-detail-card glass rounded-[50px] overflow-hidden shadow-2xl p-4 border border-white/50 group">
+          <div className="product-detail-image-container bg-white rounded-[40px] overflow-hidden shadow-inner relative">
+            <img src={image} alt={name} className="product-detail-image" />
+            <div className="product-category-badge">{product.category}</div>
           </div>
         </div>
 
-        <div className="flex flex-col justify-center py-4">
-          <span className="product-category mb-4">{product.category}</span>
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-800 mb-6 leading-tight tracking-tight">{name}</h1>
-          
-          <p className="text-4xl font-bold text-slate-900 mb-8 tracking-tighter">₹{product.price}</p>
-          
-          <p className="text-lg text-slate-500 mb-10 leading-relaxed font-medium border-l-4 border-pink-100 pl-6">
-            {product.description || 'Crafted with absolute attention to detail and curated specifically for your modern presence. Experience high-quality aesthetic design and unparalleled performance in every element.'}
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6 mb-12">
-            <div className="flex items-center border-2 border-slate-100 rounded-full bg-white p-1 shadow-sm">
-              <button 
-                className="w-12 h-12 flex items-center justify-center text-xl hover:text-pink-500 transition-colors rounded-full hover:bg-pink-50"
-                onClick={() => setQuantity(q => Math.max(1, q - 1))}
-              ><Minus size={18} /></button>
-              <span className="w-12 text-center font-bold text-lg">{quantity}</span>
-              <button 
-                className="w-12 h-12 flex items-center justify-center text-xl hover:text-pink-500 transition-colors rounded-full hover:bg-pink-50"
-                onClick={() => setQuantity(q => q + 1)}
-              ><Plus size={18} /></button>
+        <div className="space-y-10">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={16} fill={i < Math.floor(product.rating || 4.5) ? "#ec4899" : "none"} className={i < Math.floor(product.rating || 4.5) ? "text-pink-500" : "text-slate-200"} />
+              ))}
+              <span className="text-sm font-bold text-slate-400 ml-2">({product.rating || 4.5})</span>
             </div>
-            
-            <button 
-              onClick={handleAddToCart}
-              className="flex-1 btn btn-primary py-4 rounded-full flex items-center justify-center gap-3 text-lg font-bold"
-            >
-              <ShoppingCart size={22} /> Add to Collection
+            <h1 className="text-5xl font-bold text-slate-800 mb-4 tracking-tighter leading-tight">{name}</h1>
+            <p className="text-3xl font-bold text-pink-600 tracking-tight">₹{product.price}</p>
+          </div>
+
+          <p className="text-slate-500 leading-relaxed font-medium text-lg border-l-4 border-pink-100 pl-6 py-2">{product.description}</p>
+
+          <div className="flex items-center gap-8 pt-4">
+            <div className="flex items-center bg-slate-50 p-1.5 rounded-full border border-slate-100 shadow-inner">
+              <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="p-2.5 hover:text-pink-500 transition-colors bg-white rounded-full shadow-sm"><Minus size={18} /></button>
+              <span className="w-14 text-center font-bold text-xl text-slate-800">{quantity}</span>
+              <button onClick={() => setQuantity(q => q + 1)} className="p-2.5 hover:text-pink-500 transition-colors bg-white rounded-full shadow-sm"><Plus size={18} /></button>
+            </div>
+
+            <button onClick={() => addToCart(product, quantity)} className="flex-1 py-5 text-xl font-bold shadow-2xl rounded-[30px] group bg-pink-600 text-white hover:bg-pink-700 transition-all flex items-center justify-center">
+              <ShoppingCart className="mr-3 group-hover:animate-bounce" size={24} /> Integrate to Collection
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 pt-10 border-t border-slate-100">
+          <div className="flex flex-col sm:flex-row gap-8 pt-10 border-t border-slate-50 text-slate-500">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-pink-50 text-pink-500 flex items-center justify-center shadow-inner">
-                <Truck size={24} />
+              <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center"><Truck size={24} /></div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Logistics</p>
+                <p className="font-bold text-slate-700">Rapid Materialization</p>
               </div>
-              <p className="text-xs font-bold text-slate-700 uppercase tracking-widest">Free Express<br/>Delivery</p>
             </div>
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center shadow-inner">
-                <ShieldCheck size={24} />
+              <div className="w-12 h-12 bg-green-50 text-green-500 rounded-2xl flex items-center justify-center"><ShieldCheck size={24} /></div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Security</p>
+                <p className="font-bold text-slate-700">Verified Origin</p>
               </div>
-              <p className="text-xs font-bold text-slate-700 uppercase tracking-widest">Protected<br/>Registry</p>
             </div>
           </div>
         </div>
