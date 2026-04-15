@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Star, ArrowLeft, Truck, ShieldCheck, ShoppingCart, Minus, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import '../styles/productDetail.css';
+import BASE_URL from '../api';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -16,7 +17,7 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`/api/products/${id}`);
+        const response = await axios.get(`${BASE_URL}/products/${id}`);
         setProduct(response.data);
       } catch (error) {
         console.error("Error fetching product:", error);

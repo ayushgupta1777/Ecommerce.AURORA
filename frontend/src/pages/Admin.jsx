@@ -4,6 +4,7 @@ import { Button, Input } from '../components/ui';
 import { Plus, Trash2, Edit2, LayoutDashboard, Package, X, RefreshCw, BarChart3 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import '../styles/admin.css';
+import BASE_URL from '../api';
 
 const Admin = () => {
   const [user, setUser] = useState(null);
@@ -30,7 +31,7 @@ const Admin = () => {
         if (localUser) setUser(localUser);
 
         // Step 2: Try to verify with Server
-        const userRes = await axios.get('/api/user', {
+        const userRes = await axios.get(`${BASE_URL}/user`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
         });
         setUser(userRes.data);
@@ -40,8 +41,8 @@ const Admin = () => {
 
         if (isAdmin) {
           const [prodRes, statsRes] = await Promise.all([
-            axios.get('/api/products?limit=100'),
-            axios.get('/api/statistics')
+            axios.get(`${BASE_URL}/products?limit=100`),
+            axios.get(`${BASE_URL}/statistics`)
           ]);
           setProducts(prodRes.data.data || []);
           setStats(statsRes.data);
@@ -51,7 +52,7 @@ const Admin = () => {
         // If server fails but we are the special admin, try to fetch products anyway
         const localUser = JSON.parse(localStorage.getItem('user') || 'null');
         if (localUser?.email === 'ayushgupta1733@gmail.com') {
-          const prodRes = await axios.get('/api/products?limit=100');
+          const prodRes = await axios.get(`${BASE_URL}/products?limit=100`);
           setProducts(prodRes.data.data || []);
         }
       } finally {
@@ -99,15 +100,15 @@ const Admin = () => {
     try {
       const productData = { title, price: Number(price), category, description, image, brand, stock: Number(stock) };
       if (editId) {
-        await axios.patch(`/api/products/${editId}`, productData, config);
+        await axios.patch(`${BASE_URL}/products/${editId}`, productData, config);
         toast.success("Blueprint updated successfully!");
       } else {
-        await axios.post('/api/products', productData, config);
+        await axios.post(`${BASE_URL}/products`, productData, config);
         toast.success("Product materialized successfully!");
       }
 
       setTitle(''); setPrice(''); setCategory('Electronics'); setDescription(''); setBrand('Aurora'); setStock('10'); setEditId(null);
-      const refresh = await axios.get('/api/products?limit=100');
+      const refresh = await axios.get(`${BASE_URL}/products?limit=100`);
       setProducts(refresh.data.data || []);
     } catch (err) {
       toast.error("Operation failed in presence");
@@ -117,7 +118,7 @@ const Admin = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Disintegrate this product from inventory?")) return;
     try {
-      await axios.delete(`/api/products/${id}`, {
+      await axios.delete(`${BASE_URL}/products/${id}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
       });
       toast.success("Faded from existence");

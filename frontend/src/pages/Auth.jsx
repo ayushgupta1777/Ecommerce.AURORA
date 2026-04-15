@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Mail, ShieldCheck, ArrowRight, RefreshCw } from 'lucide-react';
 import { Button, Input } from '../components/ui';
 import toast from 'react-hot-toast';
+import BASE_URL from '../api';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -16,7 +17,7 @@ const Auth = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      await axios.post('/api/auth/send-otp', { email });
+      await axios.post(`${BASE_URL}/auth/send-otp`, { email });
       setStep(2);
       toast.success("Security token dispatched to your mail");
     } catch (err) {
@@ -31,7 +32,7 @@ const Auth = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      const response = await axios.post('/api/auth/verify-otp', { email, otp });
+      const response = await axios.post(`${BASE_URL}/auth/verify-otp`, { email, otp });
 
       localStorage.setItem('auth_token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useLocation } from 'react-router-dom';
 import ProductCard from '../components/ecommerce/ProductCard';
 import { SlidersHorizontal, Search, ShoppingBag } from 'lucide-react';
+import BASE_URL from '../api';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -32,8 +33,8 @@ const Products = () => {
       try {
         setLoading(true);
         const url = activeCategory === 'All' 
-          ? '/api/products?limit=100' 
-          : `/api/products?category=${activeCategory}&limit=100`;
+          ? `${BASE_URL}/products?limit=100` 
+          : `${BASE_URL}/products?category=${activeCategory}&limit=100`;
         const response = await axios.get(url);
         setProducts(response.data.data);
       } catch (error) {
