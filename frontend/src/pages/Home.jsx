@@ -5,6 +5,7 @@ import ProductCard from '../components/ecommerce/ProductCard';
 import CategoryCard from '../components/ecommerce/CategoryCard';
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import BASE_URL from '../api';
 
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -14,7 +15,7 @@ const Home = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/products?limit=8');
+        const response = await axios.get(`${BASE_URL}/products?limit=8`);
         setFeaturedProducts(response.data.data);
       } catch (error) {
         console.error("Error fetching featured products:", error);
