@@ -1,6 +1,8 @@
 require('dotenv').config();
 const fastify = require("fastify")({ logger: true });
+const { seedIfEmpty } = require("./seed");
 
+const cors = require('@fastify/cors');
 const swagger = require("@fastify/swagger");
 const swaggerUI = require("@fastify/swagger-ui");
 
@@ -82,6 +84,10 @@ const toNumber = (val, def = null) => {
 ----------------------------------*/
 
 async function registerPlugins() {
+  await fastify.register(cors, {
+    origin: true,
+  });
+
   await fastify.register(swagger, {
     openapi: {
       info: {
@@ -624,8 +630,11 @@ function registerRoutes() {
 
 const start = async () => {
   try {
-    initializeDatabase();
+    await initializeDatabase();
     fastify.log.info("✓ Database initialized");
+
+    await seedIfEmpty();
+    fastify.log.info("✓ Auto-seed check complete");
 
     await registerPlugins();
     fastify.log.info("✓ Swagger registered");
