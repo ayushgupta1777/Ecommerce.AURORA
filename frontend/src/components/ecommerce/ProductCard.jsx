@@ -1,21 +1,30 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Star } from 'lucide-react';
-import { useCart } from '../../context/CartContext';
 import toast from 'react-hot-toast';
 
 const ProductCard = ({ product }) => {
-  const { addToCart } = useCart();
+  const addToCart = (p) => {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const existing = cart.find(item => item.id === p.id);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({ ...p, quantity: 1 });
+    }
+    localStorage.setItem('cart', JSON.stringify(cart));
+    window.dispatchEvent(new Event('cartUpdated'));
+    toast.success(`${p.title || p.name} added to cart!`);
+  };
   
   const id = product.id || product._id;
   const name = product.title || product.name || 'Aesthetic Product';
-  const image = product.image || `https://placehold.co/600x600/fce7f3/db2777?text=${encodeURIComponent(name)}`;
+  const image = product.image || `https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop`;
 
   const handleAdd = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart({ ...product, id, name, image });
-    toast.success(`Success! ${name} materialized in your cart.`);
+    addToCart({ ...product, id, title: name, image });
   };
 
   return (

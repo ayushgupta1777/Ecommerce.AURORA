@@ -19,10 +19,20 @@ async function initializeDatabase() {
       rating REAL DEFAULT 0,
       stock INTEGER DEFAULT 0,
       brand TEXT NOT NULL,
+      image TEXT,     
       createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
       updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // RTY IMAGE_TEXT
+
+  // Failsafe: Add image column if it doesn't exist for legacy databases        RTY
+  try {
+    await db.execute("ALTER TABLE products ADD COLUMN image TEXT");
+  } catch (e) {
+    // Column likely already exists, ignore error
+  }
 
   // --- NEWLY ADDED: Users and Carts Tables ---
   await db.execute(`
@@ -142,15 +152,16 @@ async function createProduct(data) {
     rating = 0,
     stock = 0,
     brand,
+    image = ""
   } = data;
 
   const res = await db.execute({
     sql: `
       INSERT INTO products 
-      (title, description, price, category, rating, stock, brand, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      (title, description, price, category, rating, stock, brand, image, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `,
-    args: [title, description, price, category, rating, stock, brand],
+    args: [title, description, price, category, rating, stock, brand, image],
   });
 
   return { id: res.lastInsertRowid, ...data };
@@ -274,8 +285,8 @@ async function bulkInsertProducts(products) {
       await tx.execute({
         sql: `
           INSERT INTO products
-          (title, description, price, category, rating, stock, brand, createdAt, updatedAt)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (title, description, price, category, rating, stock, brand, image, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         args: [
           p.title,
@@ -285,6 +296,7 @@ async function bulkInsertProducts(products) {
           p.rating,
           p.stock,
           p.brand,
+          p.image || null,
           p.createdAt,
           new Date().toISOString(),
         ],
