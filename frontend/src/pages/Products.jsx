@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useLocation } from 'react-router-dom';
 import ProductCard from '../components/ecommerce/ProductCard';
+import Pagination from '../components/ecommerce/Pagination';
 import { SlidersHorizontal, Search, ShoppingBag } from 'lucide-react';
 import BASE_URL from '../api';
 
@@ -10,33 +11,57 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage] = useState(8);
   
   const location = useLocation();
   const categories = ['All', 'Electronics', 'Clothing', 'Books', 'Home'];
 
+  // Handle URL params
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const cat = params.get('category');
     const search = params.get('search');
     
     if (cat) setActiveCategory(cat);
-    if (search) setSearchQuery(search);
-    else if (!cat) {
-      // If no category or search, reset to defaults
-      setActiveCategory('All');
-      setSearchQuery('');
+    if (search) {
+      setSearchQuery(search);
+      setDebouncedSearch(search);
     }
   }, [location]);
 
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1); // Reset to page 1 on new search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const url = activeCategory === 'All' 
-          ? `${BASE_URL}/products?limit=100` 
-          : `${BASE_URL}/products?category=${activeCategory}&limit=100`;
+        let url = `${BASE_URL}/products?page=${currentPage}&limit=${itemsPerPage}`;
+        
+        if (activeCategory !== 'All') {
+          url += `&category=${activeCategory}`;
+        }
+        
+        if (debouncedSearch) {
+          url += `&search=${encodeURIComponent(debouncedSearch)}`;
+        }
+
         const response = await axios.get(url);
-        setProducts(response.data.data);
+        // The API returns { total, page, limit, data }
+        setProducts(response.data.data || []);
+        setTotalItems(response.data.total || 0);
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
@@ -44,12 +69,17 @@ const Products = () => {
       }
     };
     fetchProducts();
-  }, [activeCategory]);
+  }, [activeCategory, debouncedSearch, currentPage, itemsPerPage]);
 
-  const filteredProducts = products.filter(p => 
-    p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCategoryChange = (cat) => {
+    setActiveCategory(cat);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="container py-12 animate-fade-in">
@@ -75,7 +105,7 @@ const Products = () => {
             {categories.map(cat => (
               <button
                 key={cat}
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => handleCategoryChange(cat)}
                 className={`px-5 py-2 rounded-full text-[10px] uppercase font-bold transition-all whitespace-nowrap ${
                   activeCategory === cat 
                     ? 'bg-white text-pink-500 shadow-sm' 
@@ -95,12 +125,21 @@ const Products = () => {
             <div key={i} className="h-96 bg-slate-200 rounded-[35px] animate-pulse" />
           ))}
         </div>
-      ) : filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-          {filteredProducts.map(product => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+      ) : products.length > 0 ? (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {products.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+          
+          <Pagination 
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+          />
+        </>
       ) : (
         <div className="py-40 text-center">
           <div className="w-20 h-20 bg-slate-50 rounded-[30px] flex items-center justify-center mx-auto mb-6 text-slate-200 shadow-inner">
@@ -114,5 +153,5 @@ const Products = () => {
   );
 };
 
-export default Products
+export default Products;
 
